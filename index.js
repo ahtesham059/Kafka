@@ -11,7 +11,7 @@ const kafka = new Kafka({
 
 const producer = kafka.producer()
 
-const run = async () => {
+const init = async () => {
     await producer.connect()
 
     const chatConsumer = kafka.consumer({ groupId: process.env.CHAT_GROUP_ID })
@@ -41,7 +41,7 @@ const run = async () => {
     })
 }
 
-run().catch(console.error)
+init().catch(console.error)
 
 
 app.use(express.json());

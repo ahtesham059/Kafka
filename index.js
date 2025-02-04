@@ -1,5 +1,6 @@
 import { Kafka } from "kafkajs"
 import express from 'express';
+import { CHAT_TOPIC, NOTIFICATION_TOPIC } from "./constants.js";
 
 const app = express();
 const PORT = process.env.PORT;
@@ -12,11 +13,13 @@ const kafka = new Kafka({
 const producer = kafka.producer()
 
 const init = async () => {
-    await producer.connect()
+    await producer.connect({
+        allowAutoTopicCreation: false,
+    })
 
     const chatConsumer = kafka.consumer({ groupId: process.env.CHAT_GROUP_ID })
     await chatConsumer.connect()
-    await chatConsumer.subscribe({ topic: 'chat-topic', fromBeginning: true })
+    await chatConsumer.subscribe({ topic: CHAT_TOPIC, fromBeginning: true })
     await chatConsumer.run({
         eachMessage: async ({ topic, partition, message }) => {
             console.log(
@@ -29,7 +32,7 @@ const init = async () => {
 
     const notoficationConsumer = kafka.consumer({ groupId: process.env.NOTIFICATION_GROUP_ID })
     await notoficationConsumer.connect()
-    await notoficationConsumer.subscribe({ topic: 'notification-topic', fromBeginning: true })
+    await notoficationConsumer.subscribe({ topic: NOTIFICATION_TOPIC, fromBeginning: true })
     await notoficationConsumer.run({
         eachMessage: async ({ topic, partition, message }) => {
             console.log(
@@ -55,7 +58,7 @@ app.post('/send-message', async (req, res) => {
     if(!message) return res.status(400).json({msg: "Message is required"});
 
     await producer.send({
-        topic: 'chat-topic',
+        topic: CHAT_TOPIC,
         messages: [
           { value: message.toString() },
         ],
@@ -72,7 +75,7 @@ app.post("/send-notification", async (req, res) => {
     if (!notification) return res.status(400).json({ msg: "Notification is required" });
   
     await producer.send({
-      topic: "notification-topic",
+      topic: NOTIFICATION_TOPIC,
       messages: [{ value: notification.toString() }],
     });
   

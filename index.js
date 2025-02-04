@@ -19,7 +19,7 @@ const init = async () => {
 
     const chatConsumer = kafka.consumer({ groupId: process.env.CHAT_GROUP_ID })
     await chatConsumer.connect()
-    await chatConsumer.subscribe({ topic: CHAT_TOPIC, fromBeginning: true })
+    await chatConsumer.subscribe({ topic: CHAT_TOPIC })
     await chatConsumer.run({
         eachMessage: async ({ topic, partition, message }) => {
             console.log(
@@ -32,7 +32,7 @@ const init = async () => {
 
     const notoficationConsumer = kafka.consumer({ groupId: process.env.NOTIFICATION_GROUP_ID })
     await notoficationConsumer.connect()
-    await notoficationConsumer.subscribe({ topic: NOTIFICATION_TOPIC, fromBeginning: true })
+    await notoficationConsumer.subscribe({ topic: NOTIFICATION_TOPIC })
     await notoficationConsumer.run({
         eachMessage: async ({ topic, partition, message }) => {
             console.log(

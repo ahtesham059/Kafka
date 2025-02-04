@@ -1,5 +1,5 @@
 import { Kafka } from "kafkajs";
-import { CHAT_TOPIC } from "./constants.js";
+import { CHAT_TOPIC, NOTIFICATION_TOPIC } from "./constants.js";
 
 const kafka = new Kafka({
   clientId: 'kafka-admin',
@@ -29,9 +29,9 @@ const createTopics = async () => {
     // console.log('Existing topics:', topics);
 
 
-    console.log('Topic created successfully!');
+    console.log('Topics created successfully!');
   } catch (error) {
-    console.error('Error creating topic:', error);
+    console.error('Error creating topics:', error);
   } finally {
     await admin.disconnect();
   }

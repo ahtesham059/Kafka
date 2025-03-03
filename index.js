@@ -1,9 +1,16 @@
 import { Kafka } from "kafkajs"
 import express from 'express';
+import WebSocket, { WebSocketServer } from 'ws';
 import { CHAT_TOPIC, NOTIFICATION_TOPIC } from "./constants.js";
 
 const app = express();
 const PORT = process.env.PORT;
+
+const httpServer = app.listen(PORT, () => {
+  console.log(`Server running on port: ${PORT}`);
+})
+
+const wss = new WebSocketServer({ server: httpServer });
 
 const kafka = new Kafka({
   clientId: process.env.CLIENT_ID,
@@ -21,13 +28,13 @@ const init = async () => {
     await chatConsumer.connect()
     await chatConsumer.subscribe({ topic: CHAT_TOPIC })
     await chatConsumer.run({
-        eachMessage: async ({ topic, partition, message }) => {
-            console.log(
-                `[CHAT]
-                offset: ${message.offset},
-                value: ${message.value.toString()}`,
-            )
-        },
+      eachMessage: async ({ topic, partition, message }) => {
+        wss.clients.forEach(function each(client) {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(JSON.parse(message.value)));
+          }
+        });
+      },
     })
 
     const notoficationConsumer = kafka.consumer({ groupId: process.env.NOTIFICATION_GROUP_ID })
@@ -38,7 +45,7 @@ const init = async () => {
             console.log(
                 `[NOTIFICATION]
                 offset: ${message.offset},
-                value: ${message.value.toString()}`,
+                value: ${message.toString()}`,
             )
         },
     })
@@ -84,6 +91,26 @@ app.post("/send-notification", async (req, res) => {
     });
   });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port: ${PORT}`);
-})
+wss.on('connection', function connection(ws) {
+  ws.on('error', console.error);
+
+  ws.on('message', async function message(data) {
+    const parsedData = JSON.parse(data.toString());
+        
+    switch(parsedData.key) {
+      case "chat" : {
+        producer.send({
+          topic: CHAT_TOPIC,
+          messages: [
+            { value: JSON.stringify(parsedData.data) },
+          ],
+        })
+      }
+    }
+
+  });
+
+  ws.on('close', function close() {
+    console.log('Client disconnected');
+  });
+});
